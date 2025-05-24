@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # 触发标签格式为 v开头，如 v1.0.0
+
+permissions:
+  contents: write  # 添加写入权限
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest ]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'  # 使用最新的稳定版本
+
+      - name: Update Dependencies
+        run: |
+          go env -w GOPROXY=direct
+          go mod tidy
+
+      - name: Verify Dependencies
+        run: |
+          go mod verify
+          go mod download
+
+      - name: Build
+        run: |
+          mkdir -p bin
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            # 在 macOS 环境下编译 macOS 版本
+            GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -o bin/runcat-mac-amd64 -ldflags="-s -w" cmd/runcat/main.go
+            GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -o bin/runcat-mac-arm64 -ldflags="-s -w" cmd/runcat/main.go
+          else
+            # 在 Linux 环境下编译 Windows 版本
+            GOOS=windows GOARCH=amd64 CGO_ENABLED=1 go build -o bin/runcat-windows-amd64.exe -ldflags="-H=windowsgui -s -w" cmd/runcat/main.go
+          fi
+          # 打包
+          cd bin
+          for file in *; do
+            tar czf "$file.tar.gz" "$file"
+          done
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            bin/*.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
