@@ -37,6 +37,7 @@ func NewManager(p platform.Platform) *Manager {
 	return &Manager{
 		currentTheme: AutoType,
 		platform:     p,
+		actualTheme:  LightType,
 	}
 }
 

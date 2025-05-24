@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"path/filepath"
 	"strings"
 
 	"github.com/eatmoreapple/go-runcat/internal/theme"
@@ -20,6 +19,12 @@ const (
 	RunnerHorse  RunnerType = "horse"
 )
 
+var supportedRunners = []RunnerType{
+	RunnerCat,
+	RunnerParrot,
+	RunnerHorse,
+}
+
 // Manager 资源管理器
 type Manager struct {
 	// 嵌入的资源文件
@@ -27,7 +32,7 @@ type Manager struct {
 	// 缓存的图标资源
 	icons map[string][][]byte
 	// 图标计数
-	iconCounts map[RunnerType]int
+	iconCounts map[RunnerType]map[theme.Type]int
 }
 
 // NewResourceManager 创建一个新的资源管理器
@@ -35,7 +40,7 @@ func NewResourceManager(fs fs.FS) *Manager {
 	rm := &Manager{
 		fs:         fs,
 		icons:      make(map[string][][]byte),
-		iconCounts: make(map[RunnerType]int),
+		iconCounts: make(map[RunnerType]map[theme.Type]int),
 	}
 
 	// 初始化图标计数
@@ -46,34 +51,32 @@ func NewResourceManager(fs fs.FS) *Manager {
 
 // 初始化图标计数
 func (m *Manager) initIconCounts() {
-	// 默认值
-	m.iconCounts[RunnerCat] = 5
-	m.iconCounts[RunnerParrot] = 10
-	m.iconCounts[RunnerHorse] = 14
+	for _, runner := range supportedRunners {
+		m.iconCounts[runner] = make(map[theme.Type]int)
+	}
+
+	var supportThemes = []theme.Type{
+		theme.LightType,
+		theme.DarkType,
+	}
 
 	// 尝试从文件系统中获取实际计数
 	for runner := range m.iconCounts {
-		// 检查light主题目录
-		pattern := fmt.Sprintf("*_%s_*.ico", strings.ToLower(string(runner)))
-		lightPath := fmt.Sprintf("assets/%s/light", runner)
-
-		files, err := fs.Glob(m.fs, filepath.Join(lightPath, pattern))
-		if err == nil && len(files) > 0 {
-			m.iconCounts[runner] = len(files)
+		for _, t := range supportThemes {
+			// note: do not use filepath.Join here
+			pattern := fmt.Sprintf("assets/%s/%s/*.ico", runner, t)
+			files, err := fs.Glob(m.fs, pattern)
+			if err == nil && len(files) > 0 {
+				m.iconCounts[runner][t] = len(files)
+			}
 		}
 	}
 }
 
 // LoadIcons 加载指定角色和主题的图标
 func (m *Manager) LoadIcons(runner RunnerType, themeType theme.Type) ([][]byte, error) {
-	// 转换主题类型为字符串
-	themeStr := "light"
-	if themeType == theme.DarkType {
-		themeStr = "dark"
-	}
-
 	// 生成缓存键
-	key := fmt.Sprintf("%s_%s", themeStr, runner)
+	key := fmt.Sprintf("%s_%s", themeType, runner)
 
 	// 检查缓存
 	if icons, ok := m.icons[key]; ok {
@@ -81,12 +84,12 @@ func (m *Manager) LoadIcons(runner RunnerType, themeType theme.Type) ([][]byte, 
 	}
 
 	// 获取图标数量
-	count := m.GetIconCount(runner)
+	count := m.GetIconCount(runner, themeType)
 	if count == 0 {
-		return nil, fmt.Errorf("no icons found for runner: %s", runner)
+		return nil, fmt.Errorf("no icons found for runner: %s, %s", runner, themeType)
 	}
-	// 加载图标
 
+	// 加载图标
 	readFromFs := func(path string) ([]byte, error) {
 		file, err := m.fs.Open(path)
 		if err != nil {
@@ -101,7 +104,7 @@ func (m *Manager) LoadIcons(runner RunnerType, themeType theme.Type) ([][]byte, 
 	// 遍历图标索引
 	for i := 0; i < count; i++ {
 		// 构建资源路径
-		path := fmt.Sprintf("assets/%s/%s/%s_%s_%d.ico", runner, themeStr, themeStr, strings.ToLower(string(runner)), i)
+		path := fmt.Sprintf("assets/%s/%s/%s_%s_%d.ico", runner, themeType, themeType, strings.ToLower(string(runner)), i)
 
 		// 读取资源文件
 		data, err := readFromFs(path)
@@ -119,12 +122,12 @@ func (m *Manager) LoadIcons(runner RunnerType, themeType theme.Type) ([][]byte, 
 }
 
 // GetIconCount 获取指定角色的图标数量
-func (m *Manager) GetIconCount(runner RunnerType) int {
+func (m *Manager) GetIconCount(runner RunnerType, themeType theme.Type) int {
 	count, ok := m.iconCounts[runner]
 	if !ok {
 		return 0
 	}
-	return count
+	return count[themeType]
 }
 
 // GetIcon 获取指定角色、主题和索引的图标

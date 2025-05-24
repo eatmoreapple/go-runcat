@@ -349,7 +349,7 @@ func (m *Manager) startAnimation() {
 			case <-time.After(m.animationInterval):
 				// 更新图标索引
 				m.currentIconIndex++
-				iconCount := m.resourceManager.GetIconCount(m.currentRunner)
+				iconCount := m.resourceManager.GetIconCount(m.currentRunner, m.themeManager.GetActualTheme())
 				if m.currentIconIndex >= iconCount {
 					m.currentIconIndex = 0
 				}
