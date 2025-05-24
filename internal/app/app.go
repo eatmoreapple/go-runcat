@@ -17,8 +17,6 @@ type App struct {
 	configManager *ConfigManager
 	// 平台实现
 	platform platform.Platform
-	// 资源管理器
-	resourceManager *resource.ResourceManager
 	// 主题管理器
 	themeManager *theme.Manager
 	// 系统托盘管理器
@@ -55,12 +53,11 @@ func NewApp(fs fs.FS) (*App, error) {
 	cm := monitor.NewCPUMonitor(3 * time.Second)
 
 	return &App{
-		configManager:   configManager,
-		platform:        p,
-		resourceManager: rm,
-		themeManager:    tm,
-		systrayManager:  sm,
-		cpuMonitor:      cm,
+		configManager:  configManager,
+		platform:       p,
+		themeManager:   tm,
+		systrayManager: sm,
+		cpuMonitor:     cm,
 	}, nil
 }
 

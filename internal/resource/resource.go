@@ -11,7 +11,7 @@ import (
 	"github.com/eatmoreapple/go-runcat/internal/theme"
 )
 
-// 定义支持的动画角色类型
+// RunnerType 定义支持的动画角色类型
 type RunnerType string
 
 const (
@@ -20,8 +20,8 @@ const (
 	RunnerHorse  RunnerType = "horse"
 )
 
-// ResourceManager 资源管理器
-type ResourceManager struct {
+// Manager 资源管理器
+type Manager struct {
 	// 嵌入的资源文件
 	fs fs.FS
 	// 缓存的图标资源
@@ -31,8 +31,8 @@ type ResourceManager struct {
 }
 
 // NewResourceManager 创建一个新的资源管理器
-func NewResourceManager(fs fs.FS) *ResourceManager {
-	rm := &ResourceManager{
+func NewResourceManager(fs fs.FS) *Manager {
+	rm := &Manager{
 		fs:         fs,
 		icons:      make(map[string][][]byte),
 		iconCounts: make(map[RunnerType]int),
@@ -45,7 +45,7 @@ func NewResourceManager(fs fs.FS) *ResourceManager {
 }
 
 // 初始化图标计数
-func (m *ResourceManager) initIconCounts() {
+func (m *Manager) initIconCounts() {
 	// 默认值
 	m.iconCounts[RunnerCat] = 5
 	m.iconCounts[RunnerParrot] = 10
@@ -65,7 +65,7 @@ func (m *ResourceManager) initIconCounts() {
 }
 
 // LoadIcons 加载指定角色和主题的图标
-func (m *ResourceManager) LoadIcons(runner RunnerType, themeType theme.Type) ([][]byte, error) {
+func (m *Manager) LoadIcons(runner RunnerType, themeType theme.Type) ([][]byte, error) {
 	// 转换主题类型为字符串
 	themeStr := "light"
 	if themeType == theme.DarkType {
@@ -119,7 +119,7 @@ func (m *ResourceManager) LoadIcons(runner RunnerType, themeType theme.Type) ([]
 }
 
 // GetIconCount 获取指定角色的图标数量
-func (m *ResourceManager) GetIconCount(runner RunnerType) int {
+func (m *Manager) GetIconCount(runner RunnerType) int {
 	count, ok := m.iconCounts[runner]
 	if !ok {
 		return 0
@@ -128,7 +128,7 @@ func (m *ResourceManager) GetIconCount(runner RunnerType) int {
 }
 
 // GetIcon 获取指定角色、主题和索引的图标
-func (m *ResourceManager) GetIcon(runner RunnerType, themeType theme.Type, index int) ([]byte, error) {
+func (m *Manager) GetIcon(runner RunnerType, themeType theme.Type, index int) ([]byte, error) {
 	icons, err := m.LoadIcons(runner, themeType)
 	if err != nil {
 		return nil, err
@@ -142,7 +142,7 @@ func (m *ResourceManager) GetIcon(runner RunnerType, themeType theme.Type, index
 }
 
 // GetIconReader 获取指定角色、主题和索引的图标读取器
-func (m *ResourceManager) GetIconReader(runner RunnerType, themeType theme.Type, index int) (*bytes.Reader, error) {
+func (m *Manager) GetIconReader(runner RunnerType, themeType theme.Type, index int) (*bytes.Reader, error) {
 	icon, err := m.GetIcon(runner, themeType, index)
 	if err != nil {
 		return nil, err

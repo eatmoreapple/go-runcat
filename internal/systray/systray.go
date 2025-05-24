@@ -32,7 +32,7 @@ type Manager struct {
 	// 平台实现
 	platform platform.Platform
 	// 资源管理器
-	resourceManager *resource.ResourceManager
+	resourceManager *resource.Manager
 	// 主题管理器
 	themeManager *theme.Manager
 
@@ -68,7 +68,7 @@ type Manager struct {
 // NewSystrayManager 创建一个新的系统托盘管理器
 func NewSystrayManager(
 	p platform.Platform,
-	rm *resource.ResourceManager,
+	rm *resource.Manager,
 	tm *theme.Manager,
 ) *Manager {
 	return &Manager{
